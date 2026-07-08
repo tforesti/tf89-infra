@@ -1,0 +1,8 @@
+---
+- name: Provision VPS (Debian)
+  hosts: all
+  roles:
+    - role: common
+      tags: [common, packages, docker, ufw]
+    - role: nginx
+      tags: [nginx, proxy, static]

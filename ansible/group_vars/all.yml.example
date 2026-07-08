@@ -1,0 +1,15 @@
+# Copier vers group_vars/all.yml et adapter.
+
+# E-mail Let's Encrypt (laisser vide pour ne pas lancer Certbot)
+certbot_email: ""
+
+proxy_apps:
+  - server_name: copro-health-map.tf89.fr
+    upstream_port: 8080
+
+static_sites:
+  - server_names:
+      - tf89.fr
+      - www.tf89.fr
+    root: /srv/sites/tf89.fr
+    ensure_placeholder: true

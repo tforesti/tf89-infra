@@ -1,0 +1,56 @@
+---
+- name: Clone or update copro-health-map repository
+  ansible.builtin.git:
+    repo: "{{ copro_health_map_repo }}"
+    dest: "{{ copro_health_map_path }}"
+    version: "{{ copro_health_map_version }}"
+    update: true
+  become: true
+
+- name: Deploy .env for docker compose
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ copro_health_map_path }}/.env"
+    mode: "0600"
+  become: true
+  no_log: true
+
+- name: Build and start containers
+  ansible.builtin.command: docker compose up -d --build
+  args:
+    chdir: "{{ copro_health_map_path }}"
+  become: true
+  register: compose_up
+  changed_when: compose_up.rc == 0
+
+- name: Wait for health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ copro_health_map_http_port }}/up"
+    status_code: 200
+  register: health
+  until: health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Get api container id
+  ansible.builtin.command: docker compose ps -q api
+  args:
+    chdir: "{{ copro_health_map_path }}"
+  become: true
+  register: api_container_id
+  changed_when: false
+  when: copro_health_map_rnc_csv is defined and copro_health_map_rnc_csv | length > 0
+
+- name: Copy RNC CSV into api container
+  ansible.builtin.command: >
+    docker cp {{ copro_health_map_rnc_csv }}
+    {{ api_container_id.stdout | trim }}:/tmp/rnc.csv
+  become: true
+  when: copro_health_map_rnc_csv is defined and copro_health_map_rnc_csv | length > 0
+
+- name: Import RNC CSV
+  ansible.builtin.command: docker compose exec -T api bin/rails import:rnc[/tmp/rnc.csv]
+  args:
+    chdir: "{{ copro_health_map_path }}"
+  become: true
+  when: copro_health_map_rnc_csv is defined and copro_health_map_rnc_csv | length > 0

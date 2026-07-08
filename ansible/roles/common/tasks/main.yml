@@ -1,0 +1,94 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - git
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+      - ufw
+    state: present
+
+- name: Create keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Docker APT GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Add Docker APT repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/debian
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    architectures: "{{ docker_apt_arch | default('amd64') }}"
+    signed_by: /etc/apt/keyrings/docker.asc
+    state: present
+
+- name: Install Docker Engine + Compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Enable and start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add deploy user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: true
+
+- name: Create server directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /srv/apps
+    - /srv/sites
+    - /srv/infra
+
+- name: Allow SSH through UFW
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Allow HTTP through UFW
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS through UFW
+  community.general.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled

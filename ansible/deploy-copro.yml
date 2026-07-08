@@ -1,0 +1,9 @@
+---
+- name: Deploy copro-health-map
+  hosts: all
+  vars_files:
+    - group_vars/copro_health_map.yml
+    - group_vars/secrets.yml
+  roles:
+    - role: copro_health_map
+      tags: [deploy, copro]

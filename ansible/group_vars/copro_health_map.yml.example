@@ -1,0 +1,14 @@
+# Copier vers group_vars/copro_health_map.yml
+
+# Repo public : HTTPS (aucune clé). Repo privé : git@github.com:... + deploy key sur le VPS.
+copro_health_map_repo: https://github.com/TON_USER/copro-health-map.git
+copro_health_map_version: main
+copro_health_map_path: /srv/apps/copro-health-map
+
+copro_health_map_postgres_user: copro
+copro_health_map_app_url: https://copro-health-map.tf89.fr
+copro_health_map_http_port: 8080
+copro_health_map_assume_ssl: "true"
+
+# Optionnel : importer le CSV RNC après déploiement (chemin sur le VPS)
+# copro_health_map_rnc_csv: /tmp/rnc.csv

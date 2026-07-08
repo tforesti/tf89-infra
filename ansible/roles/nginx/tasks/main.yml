@@ -1,0 +1,93 @@
+---
+- name: Ensure static site roots exist
+  ansible.builtin.file:
+    path: "{{ item.root }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ static_sites | default([]) }}"
+
+- name: Placeholder index for static sites
+  ansible.builtin.copy:
+    dest: "{{ item.root }}/index.html"
+    mode: "0644"
+    content: |
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>{{ item.server_names[0] }}</title>
+        </head>
+        <body>
+          <h1>{{ item.server_names[0] }}</h1>
+        </body>
+      </html>
+  loop: "{{ static_sites | default([]) }}"
+  when: item.ensure_placeholder | default(false)
+
+- name: Deploy reverse-proxy vhosts
+  ansible.builtin.template:
+    src: app-proxy.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.server_name }}.conf"
+    mode: "0644"
+  loop: "{{ proxy_apps | default([]) }}"
+  notify:
+    - Test nginx config
+    - Reload nginx
+
+- name: Enable reverse-proxy vhosts
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.server_name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.server_name }}.conf"
+    state: link
+  loop: "{{ proxy_apps | default([]) }}"
+
+- name: Deploy static vhosts
+  ansible.builtin.template:
+    src: static-site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.server_names[0] }}.conf"
+    mode: "0644"
+  loop: "{{ static_sites | default([]) }}"
+  notify:
+    - Test nginx config
+    - Reload nginx
+
+- name: Enable static vhosts
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.server_names[0] }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.server_names[0] }}.conf"
+    state: link
+  loop: "{{ static_sites | default([]) }}"
+
+- name: Disable default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify:
+    - Test nginx config
+    - Reload nginx
+
+- name: Obtain TLS certificates for proxy apps
+  ansible.builtin.command: >
+    certbot --nginx
+    -d {{ item.server_name }}
+    --non-interactive --agree-tos
+    -m {{ certbot_email }}
+    --redirect
+  loop: "{{ proxy_apps | default([]) }}"
+  when: certbot_email | length > 0
+  register: certbot_proxy
+  changed_when: "'Congratulations' in certbot_proxy.stdout"
+  notify: Reload nginx
+
+- name: Obtain TLS certificates for static sites
+  ansible.builtin.command: >
+    certbot --nginx
+    {% for name in item.server_names %}-d {{ name }} {% endfor %}
+    --non-interactive --agree-tos
+    -m {{ certbot_email }}
+    --redirect
+  loop: "{{ static_sites | default([]) }}"
+  when: certbot_email | length > 0
+  register: certbot_static
+  changed_when: "'Congratulations' in certbot_static.stdout"
+  notify: Reload nginx
