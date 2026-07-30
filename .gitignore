@@ -1,4 +1,5 @@
 ansible/inventory.yml
 ansible/group_vars/all.yml
 ansible/group_vars/copro_health_map.yml
+ansible/group_vars/train_routes_explorer.yml
 ansible/group_vars/secrets.yml

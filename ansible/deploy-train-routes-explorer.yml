@@ -1,0 +1,9 @@
+---
+- name: Deploy train-routes-explorer
+  hosts: all
+  vars_files:
+    - group_vars/train_routes_explorer.yml
+    - group_vars/secrets.yml
+  roles:
+    - role: train_routes_explorer
+      tags: [deploy, train-routes-explorer]

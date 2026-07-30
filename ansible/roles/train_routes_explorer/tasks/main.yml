@@ -1,0 +1,33 @@
+---
+- name: Clone or update train-routes-explorer repository
+  ansible.builtin.git:
+    repo: "{{ train_routes_explorer_repo }}"
+    dest: "{{ train_routes_explorer_path }}"
+    version: "{{ train_routes_explorer_version }}"
+    update: true
+  become: true
+
+- name: Deploy .env for docker compose
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ train_routes_explorer_path }}/.env"
+    mode: "0600"
+  become: true
+  no_log: true
+
+- name: Build and start containers
+  ansible.builtin.command: docker compose up -d --build
+  args:
+    chdir: "{{ train_routes_explorer_path }}"
+  become: true
+  register: compose_up
+  changed_when: compose_up.rc == 0
+
+- name: Wait for health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ train_routes_explorer_http_port }}/"
+    status_code: 200
+  register: health
+  until: health.status == 200
+  retries: 30
+  delay: 5

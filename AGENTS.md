@@ -7,6 +7,7 @@ Provisionnement VPS OVH (`tf89.fr`) et déploiement des applications. **Repo sé
 ```
 Internet → Nginx (hôte, ports 80/443)
               ├── copro-health-map.tf89.fr → 127.0.0.1:8080 (docker compose)
+              ├── train-routes-explorer.tf89.fr → 127.0.0.1:8081 (docker compose)
               └── tf89.fr → /srv/sites/tf89.fr (statique)
 ```
 
@@ -24,6 +25,7 @@ Sur le VPS :
 |----------|------|
 | `ansible/site.yml` | Serveur : Docker, UFW, Nginx, Certbot |
 | `ansible/deploy-copro.yml` | App copro-health-map : clone, `.env`, `docker compose up` |
+| `ansible/deploy-train-routes-explorer.yml` | App train-routes-explorer : clone, `.env`, `docker compose up` |
 
 ## Fichiers clés
 
@@ -36,6 +38,7 @@ Sur le VPS :
 | `ansible/roles/common/` | Docker (dépôt officiel), UFW, `/srv/*` |
 | `ansible/roles/nginx/` | Vhosts + Certbot |
 | `ansible/roles/copro_health_map/` | Clone, `.env`, compose, import RNC optionnel |
+| `ansible/roles/train_routes_explorer/` | Clone, `.env`, compose |
 
 ## Conventions
 
@@ -43,7 +46,7 @@ Sur le VPS :
 - `POSTGRES_PASSWORD` ne peut pas être vide (`docker-compose.yml` impose une valeur)
 - Import RNC : le CSV doit être **copié dans le conteneur** (`docker cp`) avant `import:rnc`
 - Certbot : laisser `certbot_email` vide au premier run, le renseigner une fois l'app HTTP OK
-- Convention ports locaux : 8080 = copro-health-map, 8081 = prochain projet
+- Convention ports locaux : 8080 = copro-health-map, 8081 = train-routes-explorer
 
 ## Commandes
 

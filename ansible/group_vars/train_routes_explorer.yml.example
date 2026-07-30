@@ -1,0 +1,11 @@
+# Copier vers group_vars/train_routes_explorer.yml
+
+# Repo public : HTTPS (aucune clé). Repo privé : git@github.com:... + deploy key sur le VPS.
+train_routes_explorer_repo: https://github.com/tforesti/train-routes-explorer.git
+train_routes_explorer_version: dev
+train_routes_explorer_path: /srv/apps/train-routes-explorer
+
+train_routes_explorer_postgres_user: train_routes_explorer
+train_routes_explorer_postgres_db: train_routes_explorer
+train_routes_explorer_app_url: https://train-routes-explorer.tf89.fr
+train_routes_explorer_http_port: 8081
